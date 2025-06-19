@@ -1,4 +1,5 @@
 import axios from "axios";
+import { PaymentRequestDTO } from "../dtos/payment.dto";
 
 type MercadoPagoRequest = {
   method: string;
@@ -19,11 +20,19 @@ export async function createPaymentOnMercadoPago(
 ): Promise<MercadoPagoResponse> {
   const { ACCESS_TOKEN } = process.env;
 
-  // ENDPOINT fictício para simulação.
-  const url = "https://api.mercadopago.com/v1/payments/mock";
+  const url = "https://api.mercadopago.com/v1/payments";
 
   try {
-    const response = await axios.post<MercadoPagoResponse>(url, data, {
+    // Transformação mínima para formato da API real
+    const payload = {
+      transaction_amount: data.amount,
+      payment_method_id: data.method,
+      payer: {
+        email: data.payer.email,
+      },
+    };
+
+    const response = await axios.post<MercadoPagoResponse>(url, payload, {
       headers: {
         Authorization: `Bearer ${ACCESS_TOKEN}`,
         "Content-Type": "application/json",
@@ -39,4 +48,21 @@ export async function createPaymentOnMercadoPago(
   }
 }
 
-export type { MercadoPagoResponse }; 
+// Consulta um pagamento existente a partir do ID externo.
+export async function getPaymentDetails(
+  paymentId: string,
+): Promise<MercadoPagoResponse> {
+  const { ACCESS_TOKEN } = process.env;
+
+  const url = `https://api.mercadopago.com/v1/payments/${paymentId}`;
+
+  const response = await axios.get<MercadoPagoResponse>(url, {
+    headers: {
+      Authorization: `Bearer ${ACCESS_TOKEN}`,
+    },
+  });
+
+  return response.data;
+}
+
+export type { MercadoPagoResponse };
