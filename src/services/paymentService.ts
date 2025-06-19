@@ -1,6 +1,6 @@
 import { prisma } from "../prisma/client";
 import { PaymentRequestDTO } from "../dtos/payment.dto";
-import { createPaymentOnMercadoPago, MercadoPagoResponse } from "../utils/mercadoPago";
+import { createPaymentOnMercadoPago, generateCardToken, createCardPayment, MercadoPagoResponse } from "../utils/mercadoPago";
 import { randomUUID } from "crypto";
 import axios from "axios";
 
@@ -15,8 +15,27 @@ export async function createPayment(
   // 1. Integração real com Mercado Pago
   let mpResponse: MercadoPagoResponse;
   try {
-    const idemKey = randomUUID();
-    mpResponse = await createPaymentOnMercadoPago({ ...data, idempotencyKey: idemKey });
+    if (data.method === "pix") {
+      const idemKey = randomUUID();
+      mpResponse = await createPaymentOnMercadoPago({ ...data, idempotencyKey: idemKey });
+    } else {
+      // cartão
+      // 1. gera card token
+      const cardToken = data.token ?? (data.card ? await generateCardToken(data.card) : undefined);
+      if (!cardToken || !data.installments || !data.payment_method_id) {
+        throw new Error("CARTAO_DADOS_INSUFICIENTES");
+      }
+
+      mpResponse = await createCardPayment({
+        amount: data.amount,
+        token: cardToken,
+        installments: data.installments,
+        payment_method_id: data.payment_method_id,
+        description: data.description,
+        externalReference: data.externalReference,
+        payer: data.payer,
+      });
+    }
   } catch (error) {
     if (axios.isAxiosError(error) && error.response) {
       console.error("[MP] Falha ao criar pagamento:", {

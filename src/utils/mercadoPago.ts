@@ -112,3 +112,72 @@ export async function getPaymentDetails(
 }
 
 export type { MercadoPagoResponse };
+
+// ======= Card payments =======
+
+export type CardData = {
+  card_number: string;
+  expiration_year: string;
+  expiration_month: string;
+  security_code: string;
+  cardholder: {
+    name: string;
+    identification: {
+      type: string;
+      number: string;
+    };
+  };
+};
+
+// Gera card_token
+export async function generateCardToken(card: CardData): Promise<string> {
+  const { ACCESS_TOKEN } = process.env;
+  const url = "https://api.mercadopago.com/v1/card_tokens";
+
+  const resp = await axios.post<{ id: string }>(url, card, {
+    headers: {
+      Authorization: `Bearer ${ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  return resp.data.id;
+}
+
+// Cria pagamento com cartão
+export async function createCardPayment(data: {
+  amount: number;
+  token: string;
+  installments: number;
+  payment_method_id: string;
+  description?: string;
+  externalReference?: string;
+  payer: MercadoPagoRequest["payer"];
+}): Promise<MercadoPagoResponse> {
+  const { ACCESS_TOKEN, MP_NOTIFICATION_URL } = process.env;
+  const url = "https://api.mercadopago.com/v1/payments";
+
+  // Gera chave idempotente para garantir reexecuções seguras
+  const idempotencyKey = randomUUID();
+
+  const payload = {
+    transaction_amount: data.amount,
+    token: data.token,
+    installments: data.installments,
+    payment_method_id: data.payment_method_id,
+    description: data.description,
+    external_reference: data.externalReference,
+    notification_url: MP_NOTIFICATION_URL,
+    payer: data.payer,
+  };
+
+  const response = await axios.post<MercadoPagoResponse>(url, payload, {
+    headers: {
+      Authorization: `Bearer ${ACCESS_TOKEN}`,
+      "Content-Type": "application/json",
+      "X-Idempotency-Key": idempotencyKey,
+    },
+  });
+
+  return response.data;
+}

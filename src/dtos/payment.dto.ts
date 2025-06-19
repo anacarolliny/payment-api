@@ -16,6 +16,26 @@ export const paymentRequestSchema = z.object({
       })
       .optional(),
   }),
+  token: z.string().optional(),
+  installments: z.number().optional(),
+  payment_method_id: z.string().optional(),
+  description: z.string().optional(),
+  externalReference: z.string().optional(),
+  card: z
+    .object({
+      card_number: z.string(),
+      expiration_year: z.string(),
+      expiration_month: z.string(),
+      security_code: z.string(),
+      cardholder: z.object({
+        name: z.string(),
+        identification: z.object({
+          type: z.string(),
+          number: z.string(),
+        }),
+      }),
+    })
+    .optional(),
 });
 
 export type PaymentRequestDTO = z.infer<typeof paymentRequestSchema>; 
