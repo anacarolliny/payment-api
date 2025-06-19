@@ -11,6 +11,12 @@ type MercadoPagoRequest = {
 type MercadoPagoResponse = {
   id: string;
   status: string;
+  point_of_interaction?: {
+    transaction_data?: {
+      qr_code?: string;
+      ticket_url?: string;
+    };
+  };
 };
 
 // Simula uma chamada externa de criação de pagamento no Mercado Pago.
