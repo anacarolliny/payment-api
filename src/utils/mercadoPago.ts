@@ -1,5 +1,4 @@
 import axios from "axios";
-import { PaymentRequestDTO } from "../dtos/payment.dto";
 
 type MercadoPagoRequest = {
   method: string;
@@ -40,11 +39,8 @@ export async function createPaymentOnMercadoPago(
     });
     return response.data;
   } catch (error) {
-    // Em ambiente de desenvolvimento, apenas retorna dados simulados.
-    return {
-      id: `mp_mock_${Date.now()}`,
-      status: "approved",
-    };
+    console.error("Erro ao criar pagamento no Mercado Pago:", error);
+    throw error;
   }
 }
 
@@ -56,13 +52,17 @@ export async function getPaymentDetails(
 
   const url = `https://api.mercadopago.com/v1/payments/${paymentId}`;
 
-  const response = await axios.get<MercadoPagoResponse>(url, {
-    headers: {
-      Authorization: `Bearer ${ACCESS_TOKEN}`,
-    },
-  });
-
-  return response.data;
+  try {
+    const response = await axios.get<MercadoPagoResponse>(url, {
+      headers: {
+        Authorization: `Bearer ${ACCESS_TOKEN}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao consultar pagamento no Mercado Pago:", error);
+    throw error;
+  }
 }
 
 export type { MercadoPagoResponse };

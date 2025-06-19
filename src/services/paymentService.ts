@@ -5,8 +5,14 @@ import { createPaymentOnMercadoPago, MercadoPagoResponse } from "../utils/mercad
 export async function createPayment(
   data: PaymentRequestDTO,
 ): Promise<Pick<MercadoPagoResponse, "id" | "status">> {
-  // 1. Simula integração externa
-  const mpResponse = await createPaymentOnMercadoPago(data);
+  // 1. Integração real com Mercado Pago
+  let mpResponse: MercadoPagoResponse;
+  try {
+    mpResponse = await createPaymentOnMercadoPago(data);
+  } catch (error) {
+    console.error("Falha ao criar pagamento no Mercado Pago:", error);
+    throw new Error("ERRO_MERCADO_PAGO");
+  }
 
   // 2. Persiste no banco
   await prisma.payment.create({

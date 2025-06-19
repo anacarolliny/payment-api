@@ -14,6 +14,9 @@ export async function postPayment(req: Request, res: Response) {
     return res.status(201).json(payment);
   } catch (error) {
     console.error(error);
+    if (error instanceof Error && error.message === "ERRO_MERCADO_PAGO") {
+      return res.status(502).json({ message: "Falha ao comunicar com o Mercado Pago" });
+    }
     return res.status(500).json({ message: "Erro interno ao processar pagamento" });
   }
 } 
