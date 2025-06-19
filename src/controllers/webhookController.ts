@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { prisma } from "../prisma/client";
 import { getPaymentDetails } from "../utils/mercadoPago";
+import axios from "axios";
 
 interface MercadoPagoWebhookEvent {
   type: string;
@@ -34,8 +35,21 @@ export async function mercadoPagoWebhook(req: Request, res: Response) {
 
     return res.status(200).send();
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
-    console.error("Erro webhook MP:", error);
-    return res.status(500).json({ message: "Erro ao processar webhook", error: errorMessage });
+    if (axios.isAxiosError(error) && error.response) {
+      console.error("[MP] Webhook erro:", {
+        status: error.response.status,
+        message: (error.response.data as any)?.message,
+        cause: (error.response.data as any)?.cause,
+      });
+
+      // Se pagamento não existe, respondemos 404 específico
+      if (error.response.status === 404) {
+        return res.status(404).json({ message: "Pagamento não encontrado no Mercado Pago" });
+      }
+    } else {
+      console.error("[MP] Webhook erro inesperado:", error);
+    }
+
+    return res.status(500).json({ message: "Erro interno ao processar webhook" });
   }
 } 

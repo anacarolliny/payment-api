@@ -97,7 +97,16 @@ export async function getPaymentDetails(
     });
     return response.data;
   } catch (error) {
-    console.error("Erro ao consultar pagamento no Mercado Pago:", error);
+    const err = error as AxiosError;
+    if (err.response) {
+      console.error("[MP] Erro ao consultar pagamento:", {
+        status: err.response.status,
+        message: (err.response.data as any)?.message,
+        cause: (err.response.data as any)?.cause,
+      });
+    } else {
+      console.error("[MP] Erro inesperado ao consultar pagamento:", err.message);
+    }
     throw error;
   }
 }
