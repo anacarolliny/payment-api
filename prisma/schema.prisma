@@ -1,0 +1,19 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Payment {
+  id         String   @id @default(uuid()) @db.VarChar(36)
+  method     String
+  amount     Float
+  status     String
+  externalId String   @map("external_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("payments")
+}
