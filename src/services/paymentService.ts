@@ -1,6 +1,8 @@
 import { prisma } from "../prisma/client";
 import { PaymentRequestDTO } from "../dtos/payment.dto";
 import { createPaymentOnMercadoPago, MercadoPagoResponse } from "../utils/mercadoPago";
+import { randomUUID } from "crypto";
+import axios from "axios";
 
 type PixInfo = {
   qr_code: string | null;
@@ -13,9 +15,18 @@ export async function createPayment(
   // 1. Integração real com Mercado Pago
   let mpResponse: MercadoPagoResponse;
   try {
-    mpResponse = await createPaymentOnMercadoPago(data);
+    const idemKey = randomUUID();
+    mpResponse = await createPaymentOnMercadoPago({ ...data, idempotencyKey: idemKey });
   } catch (error) {
-    console.error("Falha ao criar pagamento no Mercado Pago:", error);
+    if (axios.isAxiosError(error) && error.response) {
+      console.error("[MP] Falha ao criar pagamento:", {
+        status: error.response.status,
+        message: error.response.data?.message,
+        cause: error.response.data?.cause,
+      });
+    } else {
+      console.error("[MP] Erro inesperado:", error);
+    }
     throw new Error("ERRO_MERCADO_PAGO");
   }
 
@@ -25,7 +36,7 @@ export async function createPayment(
       method: data.method,
       amount: data.amount,
       status: mpResponse.status,
-      externalId: mpResponse.id,
+      externalId: String(mpResponse.id),
     },
   });
 

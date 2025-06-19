@@ -7,6 +7,14 @@ export const paymentRequestSchema = z.object({
     .positive("O valor deve ser positivo"),
   payer: z.object({
     email: z.string().email("E-mail inválido"),
+    first_name: z.string().optional(),
+    last_name: z.string().optional(),
+    identification: z
+      .object({
+        type: z.string().optional(),
+        number: z.string().optional(),
+      })
+      .optional(),
   }),
 });
 
